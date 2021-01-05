@@ -52,4 +52,4 @@ base_dir = "./res"
 main_dir = "/ljx"
 con_dir = "/ljx"
 
-image_names = [("ccr.ccs.tencentyun.com/algo_team/ev_sdk_cross:v1.0.6", 1)]
+image_names = [("算法镜像", 1)]

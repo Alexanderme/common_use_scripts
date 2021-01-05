@@ -47,7 +47,7 @@ class RecordFps:
 if __name__ == "__main__":
     ports = []
     #  cpu_or_gou 1 cpu, file 1 pic
-    image_name, cpu_or_gou, file_type = ("ccr.ccs.tencentyun.com/algo_team/ev_sdk_cross:v1.0.6", 1, 1)
+    image_name, cpu_or_gou, file_type = ("算法镜像", 1, 1)
     if cpu_or_gou == 1 and file_type == 1:
         "cpu算法"
         cpu_algo = CpuAlgoResourceUse()

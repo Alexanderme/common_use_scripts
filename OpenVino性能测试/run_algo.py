@@ -36,18 +36,6 @@ def run_sdk_opencv():
     """
     cpu_total = "lscpu |grep CPU\(s\):|awk 'NR==1 {print $2}'"
     mem_total = "free -m |awk 'NR==2 {print $2}'"
-    # volume_opencv34 = "docker volume create opencv_34"
-    # volume_opencv41 = "docker volume create opencv_41"
-
-    # status, res_opencv34 = sdk_subprocess(volume_opencv34)
-    # if not status:
-    #     print('res_opencv34命令出现错误------------------')
-    #     print(res_opencv34)
-    #
-    # status, res_opencv41 = sdk_subprocess(volume_opencv41)
-    # if not status:
-    #     print('res_opencv41命令出现错误------------------')
-    #     print(res_opencv41)
 
     status, res_cpu_total = sdk_subprocess(cpu_total)
     if not status:
@@ -101,7 +89,7 @@ def docker_run(random_num, cpus, image, opencv_num):
     status, res_volume_container_num = sdk_subprocess(volume_container_num)
     if not status:
         print('res_volume_container_num命令出现错误------------------', res_volume_container_num)
-    vas_dir = "docker volume inspect  vas_%s|grep Mountpoint|awk '{print $2}'" % random_num
+    vas_dir = "docker volume inspect  vas_%s|grep Mountpoint|awk '{print $2}'"%random_num
     status, res_vas_dir = sdk_subprocess(vas_dir)
     res_vas_dir = res_vas_dir[1:-8]
     opencv34_dir = "docker volume inspect  opencv_34 |grep Mountpoint|awk '{print $2}'"
@@ -136,7 +124,6 @@ def docker_run(random_num, cpus, image, opencv_num):
         print(res_docker_run_conf)
         return res_docker_command_34
 
-
 def get_performance_information(image_name):
     """
     运行算法得到算法占用信息
@@ -159,7 +146,7 @@ def get_performance_information(image_name):
         for cpu_set_num in cpu_set_nums:
             print(sdk_num, cpu_set_num)
             random_num = ''.join([each for each in str(uuid.uuid1()).split('-')])
-            # 封装vas
+            #封装vas
             if float(opencv_num) == 3.4:
                 docker_vas = f"docker build -t {image_name}_test --build-arg IMAGE_NAME={image_name} -f {res_opencv34_dir}/Dockerfile ."
             else:
@@ -167,6 +154,7 @@ def get_performance_information(image_name):
             status, res_docker_vas = sdk_subprocess(docker_vas)
             if not status:
                 print('docker_vas命令出现错误------------------')
+                print(res_docker_vas)
             image_name_test = image_name + "_test"
             cpuset_cpus = str(cpu_set_num).replace(" ", '')[1:-1]
             container_id = docker_run(random_num, cpuset_cpus, image_name_test, opencv_num)
@@ -178,7 +166,7 @@ def get_performance_information(image_name):
             container_list.append(container_id)
             print("container_list", container_list)
         time.sleep(1700)
-        for container_id, cpu_set_num in zip(container_list, cpu_set_nums):
+        for container_id, cpu_set_num  in zip(container_list,cpu_set_nums):
             cpuset_cpus = str(cpu_set_num).replace(" ", '')[1:-1]
             cpu_mem_used = "docker stats --no-stream |grep  %s |awk '{print $3$4}'" % container_id
             cpu_list = []
@@ -198,18 +186,14 @@ def get_performance_information(image_name):
             vas_info = "ls %s |awk '{print $1}'" % vas
             info_log = os.popen(vas_info).read()
             vas_info = info_log.split('\n')[-3]
-            fps, use_time, run_times = get_total_seconds(os.path.join(vas, vas_info))
+            fps,use_time, run_times  = get_total_seconds(os.path.join(vas, vas_info))
             with open(os.path.join(res_image_data, f'{image_dir}.txt'), 'a+', encoding='utf-8') as f:
-                f.write(
-                    f"容器:{container_id}, 当前算法共运行路数:{sdk_num}, 当前指定CPU核数{cpuset_cpus}, 指定的CPU核数为:{len(cpu_set_num)}, 服务器总的CPU核数为{res_cpu_total}\n")
-                f.write(
-                    f'当前算法cpu占用:{cpu_min}%~{cpu_max}%, 内存占用:{mem_used}MiB, 当前算法运行总时间:{use_time}S,运行总帧数:{run_times} FPS:{fps}\n')
-                f.write(
-                    f"{sdk_num},{cpuset_cpus},{len(cpu_set_num)},{mem_used},{cpu_min}%~{cpu_max}%,{use_time},{run_times},{fps}\n\n")
+                f.write(f"容器:{container_id}, 当前算法共运行路数:{sdk_num}, 当前指定CPU核数{cpuset_cpus}, 指定的CPU核数为:{len(cpu_set_num)}, 服务器总的CPU核数为{res_cpu_total}\n")
+                f.write(f'当前算法cpu占用:{cpu_min}%~{cpu_max}%, 内存占用:{mem_used}MiB, 当前算法运行总时间:{use_time}S,运行总帧数:{run_times} FPS:{fps}\n')
+            with open(os.path.join(res_image_data, f'{image_dir}_new.txt'), 'a+', encoding='utf-8') as f:
+                f.write(f"{sdk_num} {cpuset_cpus} {len(cpu_set_num)} {mem_used} {cpu_min}%~{cpu_max}% {use_time} {run_times} {fps}\n\n")
         print("--------------------------------------------完成验证")
         os.system("systemctl restart docker")
-
-
-images = ["ccr.ccs.tencentyun.com/source/ev_passenger_cpu_ori:v0.1"]
+images = ["算法镜像仓库地址"]
 for image in images:
-    get_performance_information(image)
+        get_performance_information(image)
