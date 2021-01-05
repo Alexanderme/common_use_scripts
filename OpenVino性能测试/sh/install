@@ -1,0 +1,86 @@
+#! /bin/bash
+
+# for example: ./install vas_v3.5.00.tar.gz aid
+# 安装脚本实现步骤
+# 1.判断服务是否在运行，如果运行，直接结束;
+# 2.判断服务是否已安装，如果安装，备份一下;
+# 3.解压安装包到安装目录;
+# 4.建立直接启停服务软链接;
+# 5.修改local.conf文件中的aid;
+# 6.启动服务.
+
+server_name=vas
+server_start=vas_start
+server_stop=vas_stop
+install_dir=/usr/local/vas
+backup_dir=/usr/local/vas_back
+work_dir=$(cd $(dirname $0) && pwd)
+
+# 判断参数个数
+if [ $# -lt 2 ]
+then
+	echo "[ERROR] parameter nums is "$#" , while 2 was required, please retype."
+	exit -1
+fi
+
+package_name=${1}
+aid=${2}
+
+if [ ! -f ${package_name} ]; then
+	echo "[ERROR] ${package_name} not exists."
+	exit -1
+fi
+
+# 服务是否启动
+pids=$(pidof ${server_name})
+if [ ! -z "${pids}" ]; then
+	echo "${server_name} already running, ${pids}"
+	echo "stop first, please wait ..."
+	kill -s term ${pids}
+
+	sleep 3
+	
+	pids=$(pidof ${server_name})
+	if [ ! -z "${pids}" ]; then
+		echo "[ERROR] stop failed, please check, ${pids}"
+		exit -1
+	fi
+	
+	echo "stop succeed."
+fi
+
+# 服务是否安装
+if [ -d ${install_dir} ]; then
+	echo "${server_name} already installed, backup & remove, please wait..."
+	
+	if [ ! -d ${backup_dir} ]; then
+		mkdir -p ${backup_dir}
+	fi
+
+	backup_name=${backup_dir}/${server_name}_$(date "+%Y-%m-%d_%H-%M-%S").tar.gz
+	tar -zcvf ${backup_name} ${install_dir}
+	
+	rm -fr ${install_dir}/*;
+fi
+
+# 解压安装包到安装目录
+tar -zxvf ${package_name} -C /
+
+# 建立直接启停服务软链接
+if [ ! -f "/usr/bin/${server_start}" ]; then
+	echo "ln -s ${install_dir}/${server_start}.sh /usr/bin/${server_start}"
+	ln -s ${install_dir}/${server_start}.sh /usr/bin/${server_start}
+fi
+if [ ! -f "/usr/bin/${server_stop}" ]; then
+	echo "ln -s ${install_dir}/${server_stop}.sh /usr/bin/${server_stop}"
+	ln -s ${install_dir}/${server_stop}.sh /usr/bin/${server_stop}
+fi
+
+# 修改local.conf文件中的aid
+sed -i "s|^aid=.*|aid=${aid}|g" ${install_dir}/local.conf
+
+# 启动服务
+${server_start}
+
+echo "Installation completed."
+

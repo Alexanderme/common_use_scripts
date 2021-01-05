@@ -1,0 +1,14 @@
+
+# mAP of all classes
+mAP = 13.59%
+
+# Number of ground-truth objects per class
+clothes: 821
+hat: 1181
+head: 7
+no_clothes: 379
+person: 1258
+
+# Number of detected objects per class
+hat: 903 (tp:837, fp:66)  perssion=0.9269  recall=0.7087
+head: 7 (tp:1, fp:6)  perssion=0.1429  recall=0.1429
