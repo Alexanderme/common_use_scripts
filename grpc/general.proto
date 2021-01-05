@@ -1,0 +1,95 @@
+syntax = "proto3";
+package ev.algorithm.general;
+
+//双向流服务
+service GeneralService {
+    rpc General(stream GeneralReq) returns (stream GeneralResponse) {}
+}
+
+//请求协议
+//stream_id:ipc流id,有客户定义，[必选参数]
+//stream_url:流地址，暂时支持rtsp,rtmp,http-flv，[必选参数]
+//args:分析参数，例如：感应趣区域等，每个算法的参数可能有所不同，详见算法对应的帮助文档，[可选参数]
+//custom_data:请求可选参数，详见CustomReqData，[可选参数]
+message GeneralReq {
+    string stream_id = 1;
+    string stream_url = 2;
+    string args = 3;
+    CustomReqData custom_data = 4;
+}
+
+//请求可选参数
+//decoding_only_keyframes:只解码关键帧，由于算法每秒分析的帧数有限，用于减轻主机的解码压力，默认不启用，[可选参数]
+//callback_interval_s:报警上传最小间隔，单位秒，默认为0，表示有报警就返回[可选参数]
+//whether_src_pic:是否返回源图片数据，默认返回，[可选参数]
+//whether_alarm_pic:是否返回报警图片数据，默认返回，[可选参数]
+message CustomReqData {
+    bool decoding_only_keyframes = 1;
+    int32 callback_interval_s = 2;
+    bool whether_src_pic = 3;
+    bool whether_alarm_pic = 4;
+}
+
+//响应协议
+//error_code:返回码。0表示算法分析返回的数据；1表示返回服务状态信息；负数表示其它错误信息,例如参数错误码、内部错误等
+//error_msg:error_code为1时，表示服务状态信息，json格式数据；error_code为负数，表示具体的错误信息
+//stream_id:同请求协议中的stream_id
+
+//error_code为0时，才有以下数据
+//time_stamp:报警时间，1970-01-01 00:00:00至今的秒数，参考命令date -d now +%s， date -d @1547263334 "+%Y-%m-%d %H:%M:%S"
+//status:报警状态，1为报警，其它为非报警
+//src_pic_buffer:源图片数据，jpg编码格式
+//alarm_pic_buffer:报警图片数据，jpg编码格式
+//algo_data:算法分析返回的数据，json格式，每个算法分析返回的数据可能有所不同，详见算法对应的帮助文档
+message GeneralResponse {
+    int32 error_code = 1;
+    string error_msg = 2;
+    string stream_id = 3;
+    int64 time_stamp = 4;
+    int32 status = 5;
+    bytes src_pic_buffer = 6;
+    bytes alarm_pic_buffer = 7;
+    string algo_data = 8;
+}
+
+/*
+以人员闯入算法为例
+1.args参数示例，wkt格式
+POLYGON((0.001 0.001, 0.001 0.999, 0.999 0.999, 0.999 0.001))
+
+2.algo_data算法分析一帧返回数据示例，json格式
+{
+    "alert_flag": 1,
+    "people_info": [
+        {
+            "class_id": 0.0,
+            "confidence": 67.0,
+            "xmax": 467.0,
+            "xmin": 407.0,
+            "ymax": 295.0,
+            "ymin": 102.0
+        }
+    ],
+    "reality_people_num": 1,
+    "stipulate_people_num": 0
+}
+*/
+
+/*
+error_msg服务状态信息示例，json格式，首次下发参数或流连接状发生改变时会触发
+{
+    "whether_running": true,
+    "whether_connected": true,
+    "config": {
+        "stream_id": "123456",
+        "stream_url": "rtsp://admin:extremevision201@192.168.1.35:554/h264/ch1/sub/av_stream",
+        "args": "POLYGON((0.001 0.001, 0.001 0.999, 0.999 0.999, 0.999 0.001))",
+        "decoding_only_keyframes": false,
+        "callback_interval_s": 0,
+        "whether_src_pic": true,
+        "whether_alarm_pic": true
+    }
+}
+*/
+
+
